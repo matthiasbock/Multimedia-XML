@@ -22,7 +22,7 @@ class Source:
 				'audio':		self.audio,
 				'subtitles':	self.subtitles
 			}
-		for a in attr.keys():
+		for a in sorted(attr.keys()):
 			if attr[a] != None:
 				xml += ' '+a+'="'+attr[a]+'"'
 		xml += '>'+self.url+'</source>'
@@ -57,7 +57,7 @@ class Episode:
 		attr = {	'id':		self.id,
 				'title':		self.title
 			}
-		for a in attr.keys():
+		for a in sorted(attr.keys()):
 			if attr[a] != None:
 				xml += ' '+a+'="'+attr[a]+'"'
 		xml += '>\n'
@@ -93,7 +93,7 @@ class Season:
 	def __str__(self):
 		xml = '<season'
 		attr = {	'id':		self.id	}
-		for a in attr.keys():
+		for a in sorted(attr.keys()):
 			if attr[a] != None:
 				xml += ' '+a+'="'+attr[a]+'"'
 		xml += '>\n'
@@ -129,7 +129,7 @@ class Series:
 	def __str__(self):
 		xml = '<series'
 		attr = {	'title':		self.title	}
-		for a in attr.keys():
+		for a in sorted(attr.keys()):
 			if attr[a] != None:
 				xml += ' '+a+'="'+attr[a]+'"'
 		xml += '>\n'

@@ -6,14 +6,15 @@ from httpclient import HttpClient
 from htmlparser import between
 from moviexml import *
 
-def parseSinglePage(url):
-	client = HttpClient()
-	client.GET(url)
+def parseSinglePage(page, audio=None, subtitles=None):
+	series = between(page, 'style="color:#000000;">', '<').strip().replace('\n', ' ')
+	season = between(page, '>, Season ', ',').strip()
+	episode = between(page, 'Episode ', '<').strip()
 
-	url = between( between(client.Page, 'Watch movie', 'IMDB Rating'), '<a target="_blank" href="', '"' )
-	series = between(client.Page, 'style="color:#000000;">', '<').strip().replace('\n', ' ')
-	season = between(client.Page, '>, Season ', ',').strip()
-	episode = between(client.Page, 'Episode ', '<').strip()
+	url = between( between(page, 'Watch movie', 'IMDB Rating'), '<a target="_blank" href="', '"' )
+	if url == '':
+		url = between( page, '<div id="emptydiv"><iframe src="', '"')
+	url = url.replace('http://www.putlocker.com/embed/', 'http://www.putlocker.com/file/')
 
 	global xml
 	_series = xml.getSeries(series)
@@ -21,11 +22,18 @@ def parseSinglePage(url):
 	_episode = _season.getEpisode(episode)
 	_source= _episode.getSource(url)
 	_source.type = 'stream'
+	_source.audio = audio
+	_source.subtitles = subtitles
  
 xml = MovieXML()
+client = HttpClient()
+
 print 'GET ...'
-parseSinglePage('http://www.movie2k.to/tvshows-1417991-Doctor-Who.html')
+client.GET('http://www.movie2k.to/tvshows-1417991-Doctor-Who.html')
+parseSinglePage(client.Page, audio='en', subtitles='-')
 print str(xml)
+
 print 'GET ...'
-parseSinglePage('http://www.movie2k.to/tvshows-1454111-Torchwood.html')
+client.GET('http://www.movie2k.to/Torchwood-watch-tvshow-627612.html')
+parseSinglePage(client.Page, audio='en', subtitles='-')
 print str(xml)
