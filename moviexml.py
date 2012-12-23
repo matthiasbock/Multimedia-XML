@@ -37,6 +37,21 @@ class Episode:
 	def append(self, child):
 		self.children.append(child)
 
+	def getSource(self, url):
+		episode = None
+
+		for child in self.children:
+			if type(child) == Season:
+				if child.url == url:
+					source = child
+					continue
+
+		# not found: create
+		if source is None:
+			source = Source(url=url)
+			self.children.append(source)
+		return source
+
 	def __str__(self):
 		xml = '<episode'
 		attr = {	'id':		self.id,

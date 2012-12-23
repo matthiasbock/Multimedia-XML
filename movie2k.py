@@ -22,7 +22,7 @@ def parsePage(url):
 	_season = _series.getSeason(season)
 	_episode = _season.getEpisode(episode)
 	_source= _episode.getSource(url)
-	_source.update(type='stream')
+	_source.type = 'stream'
  
 xml = MovieXML()
 print 'GET ...'
