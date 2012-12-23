@@ -4,7 +4,7 @@
 #class page:
 
 class Source:
-	def __init__(self, type=None, audio=None, subtitles=None, url=None, indent=2):
+	def __init__(self, type=None, audio=None, subtitles=None, url=None, indent=2*'\t'):
 		self.type = type
 		self.audio = audio
 		self.subtitles = subtitles
@@ -12,13 +12,13 @@ class Source:
 		self.indent = indent
 		
 	def __str__(self):
-		xml = self.indent*'\t'+'<source '
-		xml = xml.strip()
-		xml += '>\n'
+		xml = self.indent+'<source '
+		xml += 'url="'+self.url+'" '
+		xml += '/>\n'
 		return xml
 
 class Movie:
-	def __init__(self, type=None, series=None, season=None, episode=None, title=None, indent=1):
+	def __init__(self, type=None, series=None, season=None, episode=None, title=None, indent=1*'\t'):
 		self.type = type
 		self.season = season
 		self.episode = episode
@@ -30,11 +30,19 @@ class Movie:
 		self.children.append(child)
 	
 	def __str__(self):
-		xml = self.indent*'\t'+'<movie '
-		if self.type != None:
-			xml += 'type="" '
-		xml = xml.strip()
+		xml = self.indent+'<movie '
+		attr = {	'type': 		self.type,
+				'season':		self.season,
+				'episode':	self.episode,
+				'title':		self.title
+			}
+		for a in attr.keys():
+			if attr[a] != None:
+				xml += a+'="'+attr[a]+'" '
 		xml += '>\n'
+		for child in self.children:
+			xml += str(child)
+		xml += self.indent+'</movie>\n'
 		return xml
 
 class MovieXML:

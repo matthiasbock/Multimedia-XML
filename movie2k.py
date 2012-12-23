@@ -23,3 +23,4 @@ if 'movie2k.to' in url:
 	movie.append( Source(type='stream', url=url) )
 	xml.append(movie)
 	print str(xml)
+
