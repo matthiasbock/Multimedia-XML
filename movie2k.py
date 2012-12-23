@@ -6,10 +6,9 @@ from httpclient import HttpClient
 from htmlparser import between
 from moviexml import *
 
-def parsePage(url):
+def parseSinglePage(url):
 	client = HttpClient()
 	client.GET(url)
-	print ' parsing...'
 
 	url = between( between(client.Page, 'Watch movie', 'IMDB Rating'), '<a target="_blank" href="', '"' )
 	series = between(client.Page, 'style="color:#000000;">', '<').strip().replace('\n', ' ')
@@ -17,7 +16,6 @@ def parsePage(url):
 	episode = between(client.Page, 'Episode ', '<').strip()
 
 	global xml
-
 	_series = xml.getSeries(series)
 	_season = _series.getSeason(season)
 	_episode = _season.getEpisode(episode)
@@ -26,7 +24,8 @@ def parsePage(url):
  
 xml = MovieXML()
 print 'GET ...'
-parsePage('http://www.movie2k.to/tvshows-1417991-Doctor-Who.html')
+parseSinglePage('http://www.movie2k.to/tvshows-1417991-Doctor-Who.html')
+print str(xml)
 print 'GET ...'
-parsePage('http://www.movie2k.to/tvshows-1454111-Torchwood.html')
+parseSinglePage('http://www.movie2k.to/tvshows-1454111-Torchwood.html')
 print str(xml)

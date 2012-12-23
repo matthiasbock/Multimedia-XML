@@ -15,7 +15,7 @@ class Source:
 		self.audio = audio
 		self.subtitles = subtitles
 		self.url = url
-		
+
 	def __str__(self):
 		xml = '<source'
 		attr = {	'type':		self.type,
@@ -38,7 +38,7 @@ class Episode:
 		self.children.append(child)
 
 	def getSource(self, url):
-		episode = None
+		source = None
 
 		for child in self.children:
 			if type(child) == Season:
@@ -168,5 +168,8 @@ class MovieXML:
 		xml += '</xml>'
 		return xml
 
-	def write(self, filename='movie.xml'):
+	def write(self, filename=None):
+		if filename is None:
+			filename = self.filename
 		open(filename, 'w').write( str(self) )
+		self.filename = filename
