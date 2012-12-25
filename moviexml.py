@@ -9,7 +9,7 @@ def indent(s):
 		result += '\t'+line+'\n'
 	return result
 
-class Source:
+class Hoster:
 	def __init__(self, type=None, audio=None, subtitles=None, url=None):
 		self.type = type
 		self.audio = audio
@@ -37,7 +37,7 @@ class Episode:
 	def append(self, child):
 		self.children.append(child)
 
-	def getSource(self, url):
+	def getHoster(self, url):
 		source = None
 
 		for child in self.children:
@@ -48,7 +48,7 @@ class Episode:
 
 		# not found: create
 		if source is None:
-			source = Source(url=url)
+			source = Hoster(url=url)
 			self.children.append(source)
 		return source
 

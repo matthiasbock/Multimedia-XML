@@ -12,86 +12,147 @@ except:
 	url = 'http://www.movie2k.to/Torchwood-watch-tvshow-627612.html'
 
 
-def getTitle(page):
-	return between(page, 'style="color:#000000;">', '<').strip().replace('\n', ' ')
-
-def absoluteURL(pageURL):
-	if pageURL[:4] != 'http':
+def completeURL(pageURL):
+	if len(pageURL) >0 and pageURL[:4] != 'http':
 		pageURL = 'http://www.movie2k.to/'+pageURL
 	return pageURL
 
-def addSource(_episode, url, audio=None, subtitles=None):
-	url = url.replace('http://www.putlocker.com/embed/', 'http://www.putlocker.com/file/')
-	_source= _episode.getSource(url)
-	_source.type = 'stream'
-	_source.audio = audio
-	_source.subtitles = subtitles
-
-def extractSource(page):
-	url = between( between(page, 'Watch movie', 'IMDB Rating'), '<a target="_blank" href="', '"' )
-	if url == '':
-		url = between(page, '<div id="emptydiv"><iframe src="', '"')
-	return url
-
-def addAllSources(_episode, pageURL, audio=None, subtitles=None):
-#	global client
-#	menu = between(client.Page, '<tr id="', '<script>', include_before=True)
-#	print menu
+#
+# a page from Movie2k.to
+#
+class Movie2kPage:
+	#
+	# load from URL or page as string
+	#
+	def __init__(self, url=None, page=None):
+		if page is None:
+			global client
+			client.GET(url)
+			self.page = str(client.Page)
+		else:
+			self.page = page
 	
-#	tr = between(menu, '<tr id="', '</tr>')
-#	k = 0
-#	while tr != '':
-#		pageURL2 = absoluteURL( between(tr, '<a href="', '"') )
-	pageURL2 = pageURL
-	addSource(_episode, pageURL2, audio=audio, subtitles=subtitles)
-	print '\tresolving '+pageURL2+' ->',
-#		if pageURL2 != pageURL:
-	client.GET(pageURL2)
-	url = extractSource(client.Page)
-	print url
-	addSource(_episode, url, audio=audio, subtitles=subtitles)
-#		k += 1
-#		print str(k)
-#		tr = between(menu, '<tr id="', '</tr>', skip=k)
+	#
+	# return the title of the current page's video
+	#
+	def extractTitle(self):
+		return between(self.page, 'style="color:#000000;">', '<').strip().replace('\n', ' ')
 
-def updateEpisodePageList(xml, page, audio=None, subtitles=None):
-	seasons = []
-	series = getTitle(page)
-	_series = xml.getSeries(series)
+	#
+	# return the URL of the current page's video URL
+	#
+	def extractVideoLink(self):
+		url = between( between(self.page, 'Watch movie', 'IMDB Rating'), '<a target="_blank" href="', '"' )
+		if url == '':
+			url = between(self.page, '<div id="emptydiv"><iframe src="', '"')
+		url = url.replace('.com/embed/', '.com/file/')
+		return url
 
-	allSeasons_allEpisodes = between(page, '<FORM name="seasonform">', '</tr>')
-	allSeasons = between(allSeasons_allEpisodes, '<SELECT name="season"', '</SELECT>')
-
-	for i in range(4):
-		season = between(allSeasons, '<OPTION value="', '"', skip=i)
-		seasons.append(season.strip())
-
-	j = 0
-	for season in seasons:
-		_season = _series.getSeason(season)
-		allEpisodes = between(allSeasons_allEpisodes, '<FORM name="episodeform'+season+'">', '</FORM>', skip=j)
-		j += 1
-		#print allEpisodes
+	#
+	# return a dictionary of the video hosters listed on the current page or a specified URL
+	#
+	def extractHosters(self, URL=None):
+		global client
+		if URL != None:
+			client.GET(URL)
+			self.page = str(client.Page)
+		
+		self.hosters = {}
+		
 		i = 0
+		tr = between(self.page, '<tr id="tablemoviesindex2"', "</tr>")
+		while tr != '':
+			link = completeURL( between(tr, '<a href="', '"') )
+			if link != '':
+				m = Movie2kPage(link)
+				link = m.extractVideoLink()
+				del m
+			name = between( between(tr, '<td ', '</td>', skip=1), ' &nbsp;', '</a>' )
+			self.hosters[name] = link
+			i += 1
+			tr = between(self.page, '<tr id="tablemoviesindex2"', "</tr>", skip=i)
+		
+		return self.hosters
+		
+	#
+	# return an array of the available seasons
+	#
+	def extractSeasons(self):
+		selectSeason = between(self.page, '<SELECT name="season"', '</SELECT>')
+		i = 0
+		self.seasons = []
+		season = between(selectSeason, '<OPTION value="', '"')
+		while season != '':
+			self.seasons.append(season.strip())
+			i += 1
+			season = between(selectSeason, '<OPTION value="', '"', skip=i)
+		return self.seasons
+
+	#
+	# return a dictionary of the available {episode number:URL} pairs for a specific season
+	#
+	def extractEpisodes(self, season):
+		allEpisodes = between(self.page, '<FORM name="episodeform'+season+'">', '</FORM>')
+		i = 0
+		self.episodes = {}
 		episode = between(allEpisodes, '>Episode ', '</OPTION')
 		while episode != '':
-			#print 'Season '+season+', Episode '+episode
 			pageURL = between(allEpisodes, '<OPTION value="', '"', skip=i)
-			if pageURL != '':
-				_episode = _season.getEpisode(episode)
-				xml = addAllSources(_episode, absoluteURL(pageURL), audio=audio, subtitles=subtitles)
 			i += 1
+			if pageURL != '':
+				self.episodes[episode] = completeURL(pageURL)
 			episode = between(allEpisodes, '>Episode ', '</OPTION', skip=i)
+		return self.episodes
 
 
- 
-xml = MovieXML()
-client = HttpClient()
+#
+# inputs:
+#	movie2k.to page, HTML document as string
+#	audio language (optional)
+#	subtitle language (optional)
+# function:
+#	for all seasons:
+#		for all episodes:
+#			extract all hoster links and add them to the xml
+#
+def makeEpisodeList(xml, page, audio=None, subtitles=None):
 
-print 'GET '+url+' ...'
-client.GET(url)
-if 'us_flag_small.png' in str(client.Page):
-	audio = 'en'
-updateEpisodePageList(xml, client.Page, audio=audio, subtitles='-')
+	page = str(page)
 
-print str(xml)
+	movie2k = Movie2kPage(page=page)
+
+	# try audio language and subtitle auto-detect
+	if 'us_flag_small.png' in page:
+		audio = 'en'
+	if not ('subtitled' in page or 'subtitles' in page or 'Untertitel' in page or 'untertitelt' in page):
+		subtitles='-'
+
+	series = movie2k.extractTitle()
+	_series = xml.getSeries(series)
+
+	for season in movie2k.extractSeasons():
+		_season = _series.getSeason(season.zfill(2))
+		for episode in movie2k.extractEpisodes(season).keys():
+			number = episode
+			URL = movie2k.episodes[episode]
+			_episode = _season.getEpisode(episode.zfill(2))
+			for hoster in movie2k.extractHosters(URL).keys():
+
+				print 'S'+season.zfill(2)+'E'+episode.zfill(2)+' - '+hoster+': '+movie2k.hosters[hoster]
+
+				_hoster = _episode.getHoster( movie2k.hosters[hoster] )
+				_hoster.type = 'stream'
+				_hoster.name = hoster
+				_hoster.audio = audio
+				_hoster.subtitles = subtitles
+
+
+if __name__ == '__main__':
+	xml = MovieXML()
+	client = HttpClient()
+
+	client.GET(url)
+	makeEpisodeList(xml, client.Page)
+
+	xml.write('Torchwood.xml')
+	print 'Torchwood.xml written.'
