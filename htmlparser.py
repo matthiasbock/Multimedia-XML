@@ -41,9 +41,11 @@ def straddle(page, startkey):
 
 	return page[:p], page[q:]
 
-def between(hay, before, after, occurence=1, include=False, include_before=False, include_after=False): # return substring from haystack between "before" and "after"
+def between(hay, before, after, occurence=1, skip=None, include=False, include_before=False, include_after=False): # return substring from haystack between "before" and "after"
 	haystack = str(hay)
 	start = 0
+	if skip != None:
+		occurence = skip+1
 	for i in range(1, occurence):
 		start = haystack.find(before, start)+1
 	p = haystack.find(before, start)
