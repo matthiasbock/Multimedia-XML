@@ -17,7 +17,7 @@ class Hoster:
 		self.url = url
 
 	def __str__(self):
-		xml = '<source'
+		xml = '<hoster'
 		attr = {	'type':		self.type,
 				'audio':		self.audio,
 				'subtitles':	self.subtitles
@@ -25,7 +25,7 @@ class Hoster:
 		for a in sorted(attr.keys()):
 			if attr[a] != None:
 				xml += ' '+a+'="'+attr[a]+'"'
-		xml += '>'+self.url+'</source>'
+		xml += '>'+self.url+'</hoster>'
 		return xml
 
 class Episode:
