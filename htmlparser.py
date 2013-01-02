@@ -256,6 +256,31 @@ class Eval:
 			number -= 1
 		return code
 
+class EnterCodeBelow:
+	def __init__(self, page):
+		self.page = str(page)
+		
+	def extractCode(self):
+		obfuscated_code = between(self.page, 'Enter code below', '</table>')
+		code = [0, 0, 0, 0]
+		for i in range(4):
+			# deobfuscate order
+			j = int(between(between(obfuscated_code, '<span ', '</span>', skip=i), 'padding-left:', 'px'))
+			if 0 < j < 20:
+				n = 0
+			elif 20 < j < 40:
+				n = 1
+			elif 40 < j < 55:
+				n = 2
+			else:
+				n = 3
+			# deobfuscate value
+			k = between(obfuscated_code, '>&#', ';', skip=i)
+			k = str( int(k)-48 )
+			code[n] = k
+		code = ''.join(code)
+		return code
+
 class HTML:
 	def __init__(self, HTML, debug=False):
 		self.string = HTML

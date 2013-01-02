@@ -1,16 +1,9 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-15 -*-
 
-import sys
 from httpclient import HttpClient
 from htmlparser import between
 from moviexml import *
-
-try:
-	url = sys.argv[1]
-except:
-	url = 'http://www.movie2k.to/Torchwood-watch-tvshow-627612.html'
-
 
 def completeURL(pageURL):
 	if len(pageURL) >0 and pageURL[:4] != 'http':
@@ -26,9 +19,10 @@ class Movie2kPage:
 	#
 	def __init__(self, url=None, page=None):
 		if page is None:
-			global client
+			client = HttpClient()
 			client.GET(url)
 			self.page = str(client.Page)
+			del client
 		else:
 			self.page = page
 	
@@ -41,11 +35,21 @@ class Movie2kPage:
 	#
 	# return the URL of the current page's video URL
 	#
-	def extractVideoLink(self):
-		url = between( between(self.page, 'Watch movie', 'IMDB Rating'), '<a target="_blank" href="', '"' )
+	def extractVideoLink(self, page=None):
+		if page is None:
+			page = self.page
+		url = between( between(page, 'question.png', 'IMDB Rating'), '<a target="_blank" href="', '"' )
 		if url == '':
-			url = between(self.page, '<div id="emptydiv"><iframe src="', '"')
+			url = between(page, '<div id="emptydiv"><iframe src="', '"')
 		url = url.replace('.com/embed/', '.com/file/')
+
+		# movie splitted into several video files
+		if 'teil1_aktiv.png' in page:
+			print 'part 2 ...'
+			client = HttpClient()
+			client.GET( between( between(page, 'teil1_aktiv.png', 'teil2_inaktiv.png'), '<a href="', '"') )
+			url = [url, extractVideoLink(client.Page)]
+			del client
 		return url
 
 	#
@@ -73,7 +77,13 @@ class Movie2kPage:
 			tr = between(self.page, '<tr id="tablemoviesindex2"', "</tr>", skip=i)
 		
 		return self.hosters
-		
+	
+	#
+	# is it a series or is it a movie ?
+	#
+	def isSeries(self):
+		return False
+	
 	#
 	# return an array of the available seasons
 	#
@@ -107,7 +117,7 @@ class Movie2kPage:
 
 #
 # inputs:
-#	movie2k.to page, HTML document as string
+#	movie2k.to series page, HTML document as string
 #	audio language (optional)
 #	subtitle language (optional)
 # function:
@@ -124,6 +134,8 @@ def makeEpisodeList(xml, page, audio=None, subtitles=None):
 	# try audio language and subtitle auto-detect
 	if 'us_flag_small.png' in page:
 		audio = 'en'
+	elif 'us_ger_small.png' in page:
+		audio = 'de'
 	if not ('subtitled' in page or 'subtitles' in page or 'Untertitel' in page or 'untertitelt' in page):
 		subtitles='-'
 
@@ -146,13 +158,5 @@ def makeEpisodeList(xml, page, audio=None, subtitles=None):
 				_hoster.audio = audio
 				_hoster.subtitles = subtitles
 
+	return series
 
-if __name__ == '__main__':
-	xml = MovieXML()
-	client = HttpClient()
-
-	client.GET(url)
-	makeEpisodeList(xml, client.Page)
-
-	xml.write('Torchwood.xml')
-	print 'Torchwood.xml written.'
